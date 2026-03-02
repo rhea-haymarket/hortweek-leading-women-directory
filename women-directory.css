@@ -17,6 +17,7 @@
       max-width: 1400px;
       margin: 0 auto;
       padding: 20px 18px 42px;
+      font-family: var(--serif); 
     }
 
     /* Header controls */
