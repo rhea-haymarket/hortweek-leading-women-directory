@@ -1,20 +1,11 @@
-<script>
-/******************************************************************
-   * CONFIG
-   ******************************************************************/
+
   const SHEET_ID = "1FKzBs8MjWzYvb2gSwQydrdr6IxVi2VTnoG_VcXObYkA"; 
   const GID = "0";           
 
   // Polling refresh: checks for updates every N ms
   const REFRESH_EVERY_MS = 30000; // 30s
 
-  // Column headers expected in the sheet (row 1):
-  // First Name, Surname, JobTitle, Organisation, Category, LinkedIn, ImageURL
 
-  /******************************************************************
-   * DATA FETCH (Google Visualization API endpoint)
-   * Works for published/public sheets without API keys.
-   ******************************************************************/
 function gvizUrl(){
   const tqx = "out:json;headers=1";
   return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${encodeURIComponent(GID)}&tqx=${encodeURIComponent(tqx)}&tq=${encodeURIComponent("select *")}`;
@@ -40,8 +31,7 @@ async function fetchSheetRows(){
     return obj;
   });
 
-  // Map columns by position (A=FirstName, B=Surname, C=JobTitle, D=Organisation, E=Category, F=LinkedIn, G=ImageURL)
-  // Also try named headers for flexibility
+ 
   const hasRealHeaders = headers.some(h => h === "First Name" || h === "FirstName" || h === "Surname");
 
   if (!hasRealHeaders) {
@@ -105,9 +95,7 @@ async function fetchSheetRows(){
     render(filtered);
   }
 
-  /******************************************************************
-   * RENDER
-   ******************************************************************/
+
   const gridEl = document.getElementById("grid");
   const emptyEl = document.getElementById("empty");
   const countInfoEl = document.getElementById("countInfo");
@@ -303,10 +291,7 @@ async function fetchSheetRows(){
     }
   }
 
-  /******************************************************************
-   * INIT
-   ******************************************************************/
+
   buildAz();
   loadAndMaybeUpdate({force:true});
   setInterval(() => loadAndMaybeUpdate({force:false}), REFRESH_EVERY_MS);
-</script>
