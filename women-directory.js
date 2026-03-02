@@ -5,16 +5,15 @@
   // Polling refresh: checks for updates every N ms
   const REFRESH_EVERY_MS = 30000; // 30s
 
-  function sendHeight() {
-    const height = document.documentElement.scrollHeight;
-    window.parent.postMessage(
-      { type: 'iframeHeight', height },
-      '*'
-    );
-  }
+// Post height to parent whenever content changes
+function sendHeight() {
+  const height = document.body.scrollHeight;
+  window.parent.postMessage({ iframeHeight: height }, '*');
+}
 
-  window.addEventListener('load', sendHeight);
-  window.addEventListener('resize', sendHeight);
+// Send on load and whenever content might change
+window.addEventListener('load', sendHeight);
+setInterval(sendHeight, 500);
 
 function gvizUrl(){
   const tqx = "out:json;headers=1";
