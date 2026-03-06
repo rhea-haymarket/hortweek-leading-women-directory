@@ -1,5 +1,4 @@
-
-  const SHEET_ID = "1FKzBs8MjWzYvb2gSwQydrdr6IxVi2VTnoG_VcXObYkA"; 
+const SHEET_ID = "1FKzBs8MjWzYvb2gSwQydrdr6IxVi2VTnoG_VcXObYkA"; 
   const GID = "0";           
 
   // Polling refresh: checks for updates every N ms
@@ -18,6 +17,23 @@ setInterval(sendHeight, 500);
 function gvizUrl(){
   const tqx = "out:json;headers=1";
   return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${encodeURIComponent(GID)}&tqx=${encodeURIComponent(tqx)}&tq=${encodeURIComponent("select *")}`;
+}
+
+// Known header label values to skip if they sneak through as a data row
+const HEADER_VALUES = new Set([
+  "first name", "firstname", "surname", "last name",
+  "jobtitle", "job title", "organisation", "organization",
+  "category", "linkedin", "imageurl", "image url",
+  "a", "b", "c", "d", "e", "f", "g"
+]);
+
+function isHeaderRow(r) {
+  // If the "FirstName" or "Surname" cell looks like a column header label, skip it
+  const fn = (r.FirstName ?? "").toString().trim().toLowerCase();
+  const sn = (r.Surname ?? "").toString().trim().toLowerCase();
+  return HEADER_VALUES.has(fn) || HEADER_VALUES.has(sn) ||
+         fn === "first name" || fn === "firstname" ||
+         sn === "surname" || sn === "last name";
 }
 
 async function fetchSheetRows(){
@@ -40,11 +56,11 @@ async function fetchSheetRows(){
     return obj;
   });
 
- 
   const hasRealHeaders = headers.some(h => h === "First Name" || h === "FirstName" || h === "Surname");
 
+  let mapped;
   if (!hasRealHeaders) {
-    return rows.map(r => ({
+    mapped = rows.map(r => ({
       FirstName: r.A ?? "",
       Surname: r.B ?? "",
       JobTitle: r.C ?? "",
@@ -53,18 +69,20 @@ async function fetchSheetRows(){
       LinkedIn: r.F ?? "",
       ImageURL: r.G ?? "",
     }));
+  } else {
+    mapped = rows.map(r => ({
+      FirstName: r["First Name"] ?? r["FirstName"] ?? r.A ?? "",
+      Surname: r["Surname"] ?? r["Last Name"] ?? r.B ?? "",
+      JobTitle: r["JobTitle"] ?? r["Job Title"] ?? r.C ?? "",
+      Organisation: r["Organisation"] ?? r["Organization"] ?? r.D ?? "",
+      Category: r["Category"] ?? r.E ?? "",
+      LinkedIn: r["LinkedIn"] ?? r.F ?? "",
+      ImageURL: r["ImageURL"] ?? r["Image URL"] ?? r.G ?? "",
+    }));
   }
 
-  // Named headers — map flexibly
-  return rows.map(r => ({
-    FirstName: r["First Name"] ?? r["FirstName"] ?? r.A ?? "",
-    Surname: r["Surname"] ?? r["Last Name"] ?? r.B ?? "",
-    JobTitle: r["JobTitle"] ?? r["Job Title"] ?? r.C ?? "",
-    Organisation: r["Organisation"] ?? r["Organization"] ?? r.D ?? "",
-    Category: r["Category"] ?? r.E ?? "",
-    LinkedIn: r["LinkedIn"] ?? r.F ?? "",
-    ImageURL: r["ImageURL"] ?? r["Image URL"] ?? r.G ?? "",
-  }));
+  // Drop any row that looks like the header row itself
+  return mapped.filter(r => !isHeaderRow(r));
 }
 
 
@@ -107,8 +125,6 @@ async function fetchSheetRows(){
 
   const gridEl = document.getElementById("grid");
   const emptyEl = document.getElementById("empty");
-  const countInfoEl = document.getElementById("countInfo");
-  const refreshInfoEl = document.getElementById("refreshInfo");
 
   function chainIcon(){
     return `
@@ -204,8 +220,6 @@ async function fetchSheetRows(){
 
       gridEl.appendChild(card);
     }
-
-    countInfoEl.textContent = `${sorted.length} result${sorted.length === 1 ? "" : "s"} shown`;
   }
 
   function escapeHtml(str){
@@ -290,15 +304,16 @@ async function fetchSheetRows(){
         lastHash = hash;
         allPeople = cleaned;
         applyFilters();
-        refreshInfoEl.textContent = `Updated: ${new Date().toLocaleString()}`;
-      } else {
-        refreshInfoEl.textContent = `Updated: ${new Date().toLocaleTimeString()} (no changes)`;
       }
     } catch (err){
-      refreshInfoEl.textContent = `Error loading sheet: ${err.message}`;
       console.error(err);
     }
   }
+
+
+  buildAz();
+  loadAndMaybeUpdate({force:true});
+  setInterval(() => loadAndMaybeUpdate({force:false}), REFRESH_EVERY_MS);
 
 
   buildAz();
